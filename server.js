@@ -31,4 +31,41 @@ wsServer.on("request", request => {
     const connection = request.accept(null, request.origin)
 
     connection.on("close", () => console.log("A connection has closed."))
+
+    const playerId = gpid()
+    const x = randomX()
+    const y = randomY()
+
+    playerInfo = {
+        "connection": connection,
+        "playerId": playerId,
+        "x": x,
+        "y": y
+    }
+
+    // The payload to be sent back to the client
+    const payLoad = {
+        "method": "connect",
+        "playerId": playerId,
+        "x": x,
+        "y": y
+    }
+
+    // Send back the payload to the client and set its initial position
+    connection.send(JSON.stringify(payLoad))
+
+    players.push(playerInfo)
+
 })
+
+function gpid() {
+    return Math.floor(Math.random() + 100) * Math.floor(Math.random() * 100) + Math.floor(Math.random() * 100)
+}
+
+function randomX() {
+    return Math.floor(Math.random() * 700) + 35
+}
+
+function randomY() {
+    return Math.floor(Math.random() * 300) + 50
+}
