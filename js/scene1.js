@@ -30,8 +30,6 @@ class Scene1 extends Phaser.Scene {
     create() {
         this.add.image(0, 0, 'bg').setOrigin(0, 0)
 
-
-
         this.anims.create({key: 'idle', frames: this.anims.generateFrameNames('character', {start: 0, end: 0})})
         this.anims.create({key: 'down', frames: this.anims.generateFrameNames('character', {start: 0, end: 3})})
         this.anims.create({key: 'left', frames: this.anims.generateFrameNames('character', {start: 4, end: 7})})
@@ -40,6 +38,23 @@ class Scene1 extends Phaser.Scene {
 
         this.createPlayer()
         this.physics.add.existing(this.player)
+
+        this.otherPlayers = this.physics.add.group()
+
+        const payLoad = {
+            "method": "currentPlayers"
+        }
+        this.ws.send(JSON.stringify(payLoad))
+        this.ws.onmessage = (message) => {
+            const response = JSON.parse(message.data)
+
+            if (response.method === "currentPlayers") {
+                const playerId = response.playerId 
+                const x = response.x 
+                const y = response.y 
+                this.addOtherPlayers({x: x, y: y, playerId: playerId})
+            }
+        }
 
         this.cursors = this.input.keyboard.createCursorKeys()
     }
@@ -68,5 +83,12 @@ class Scene1 extends Phaser.Scene {
 
     createPlayer() {
         this.player = this.add.sprite(this.x, this.y, 'character')
+    }
+
+    addOtherPlayers(playerInfo) {
+        const otherPlayer = this.add.sprite(playerInfo.x, playerInfo.y, "character")
+        otherPlayer.setTint(Math.random() * 0xffffff)
+        otherPlayer.playerId = playerInfo.playerId 
+        this.otherPlayers.add(otherPlayer)
     }
 }

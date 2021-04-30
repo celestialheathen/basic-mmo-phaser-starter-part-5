@@ -32,6 +32,24 @@ wsServer.on("request", request => {
 
     connection.on("close", () => console.log("A connection has closed."))
 
+    connection.on("message", message => {
+        const result = JSON.parse(message.utf8Data)
+
+        if (result.method === "currentPlayers") {
+            players.forEach (player => {
+                if (player.playerId !== playerId) {
+                    const payLoad = {
+                        "method": "currentPlayers",
+                        "playerId": player.playerId,
+                        "x": player.x, 
+                        "y": player.y
+                    }
+                    connection.send(JSON.stringify(payLoad))
+                }
+            })
+        }
+    })
+
     const playerId = gpid()
     const x = randomX()
     const y = randomY()
