@@ -30,7 +30,19 @@ wsServer.on("request", request => {
     // A connection
     const connection = request.accept(null, request.origin)
 
-    connection.on("close", () => console.log("A connection has closed."))
+    // When a player disconnects
+    connection.on("close", () => {
+        players.forEach( player => {
+            if (player.playerId !== playerId) {
+                const payLoad = {
+                    "method": "disconnect",
+                    "playerId": playerId
+                }
+            player.connection.send(JSON.stringify(payLoad))
+            }
+        })
+        players = players.filter(player => player.playerId !== playerId)
+    })
 
     connection.on("message", message => {
         const result = JSON.parse(message.utf8Data)
@@ -71,6 +83,17 @@ wsServer.on("request", request => {
 
     // Send back the payload to the client and set its initial position
     connection.send(JSON.stringify(payLoad))
+
+    // Send new player's info to all existing players
+    players.forEach( player => {
+        const payLoad = {
+            "method": "newPlayer",
+            "playerId": playerId,
+            "x": x,
+            "y": y
+        }
+        player.connection.send(JSON.stringify(payLoad))
+    })
 
     players.push(playerInfo)
 
