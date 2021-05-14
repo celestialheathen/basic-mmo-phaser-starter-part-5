@@ -2,20 +2,19 @@ const http = require("http") // Load in http module
 const app = require("express")() // Load in express module
 const express = require("express") 
 
-// localhost:5500 is where the game page will be served
-// It will create a socket connect to 9090
 app.use('/js', express.static(__dirname + '/js'))
 app.use('/assets', express.static(__dirname + '/assets'))
 app.get("/", (req, res) => res.sendFile(__dirname + "/index.html"))
 
-app.listen(5500, ()=> console.log("Client Port, listening.. on 5500"))
 
+let PORT = process.env.PORT || 5500 
+// app.listen(5500, ()=> console.log("Client Port, listening.. on 5500"))
 
-// The server will be on port 9090
 const websocketServer = require("websocket").server
-const httpServer = http.createServer()
+const httpServer = http.createServer(app)
 
-httpServer.listen(9090, () => console.log("Server Port, listening.. on 9090"))
+// httpServer.listen(9090, () => console.log("Server Port, listening.. on 9090"))
+httpServer.listen(PORT)
 
 
 // Store a list of all the players
@@ -57,6 +56,27 @@ wsServer.on("request", request => {
                         "y": player.y
                     }
                     connection.send(JSON.stringify(payLoad))
+                }
+            })
+        }
+
+        if (result.method === "movement") {
+            const playerId = result.playerId 
+            const x = result.x 
+            const y = result.y 
+            const payLoad = {
+                "currentFacing": result.currentFacing,
+                "method": "updateLocation",
+                "playerId": playerId,
+                "x": x,
+                "y": y
+            }
+            players.forEach(player => {
+                if (player.playerId !== result.playerId) {
+                    player.connection.send(JSON.stringify(payLoad))
+                } else {
+                    player.x = x 
+                    player.y = y
                 }
             })
         }

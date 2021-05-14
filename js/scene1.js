@@ -7,7 +7,8 @@ class Scene1 extends Phaser.Scene {
         this.playerId = null 
         this.x = null
         this.y = null 
-        this.ws = new WebSocket("ws://localhost:9090")
+        let HOST = location.origin.replace(/^http/, 'ws')
+        this.ws = new WebSocket(HOST)
         this.ws.onmessage = (message) => {
             const response = JSON.parse(message.data)
 
@@ -28,6 +29,15 @@ class Scene1 extends Phaser.Scene {
     }
 
     create() {
+        this.playerFacing = {
+            'left': 'LEFT',
+            'right': 'RIGHT',
+            'up': 'UP',
+            'down': 'DOWN'
+        }
+
+        this.currentFacing = this.playerFacing.down
+
         this.add.image(0, 0, 'bg').setOrigin(0, 0)
 
         this.anims.create({key: 'idle', frames: this.anims.generateFrameNames('character', {start: 0, end: 0})})
@@ -62,6 +72,10 @@ class Scene1 extends Phaser.Scene {
             if (response.method === "disconnect") {
                 this.removePlayer(response.playerId)
             }
+
+            if (response.method === "updateLocation") {
+                this.updateLocation({x: response.x, y: response.y, playerId: response.playerId, currentFacing: response.currentFacing})
+            }
         }
 
         this.cursors = this.input.keyboard.createCursorKeys()
@@ -71,18 +85,54 @@ class Scene1 extends Phaser.Scene {
         if (this.cursors.right.isDown) {
             this.player.anims.play('right', true)
             this.player.body.setVelocityX(300)
+            this.currentFacing = this.playerFacing.right
+            const payLoad = {
+                'method': 'movement',
+                'playerId': this.playerId,
+                'x': this.player.x,
+                'y': this.player.y,
+                'currentFacing': this.currentFacing
+            }
+            this.ws.send(JSON.stringify(payLoad))
         }
         else if (this.cursors.left.isDown) {
             this.player.anims.play('left', true)
             this.player.body.setVelocityX(-300)
+            this.currentFacing = this.playerFacing.left
+            const payLoad = {
+                'method': 'movement',
+                'playerId': this.playerId,
+                'x': this.player.x,
+                'y': this.player.y,
+                'currentFacing': this.currentFacing
+            }
+            this.ws.send(JSON.stringify(payLoad))
         }
         else if (this.cursors.up.isDown) {
             this.player.anims.play('up', true)
             this.player.body.setVelocityY(-300)
+            this.currentFacing = this.playerFacing.up
+            const payLoad = {
+                'method': 'movement',
+                'playerId': this.playerId,
+                'x': this.player.x,
+                'y': this.player.y,
+                'currentFacing': this.currentFacing
+            }
+            this.ws.send(JSON.stringify(payLoad))
         }
         else if (this.cursors.down.isDown) {
             this.player.anims.play('down', true)
             this.player.body.setVelocityY(300)
+            this.currentFacing = this.playerFacing.down
+            const payLoad = {
+                'method': 'movement',
+                'playerId': this.playerId,
+                'x': this.player.x,
+                'y': this.player.y,
+                'currentFacing': this.currentFacing
+            }
+            this.ws.send(JSON.stringify(payLoad))
         }
         else {
             this.player.body.setVelocity(0)
@@ -104,6 +154,32 @@ class Scene1 extends Phaser.Scene {
         this.otherPlayers.getChildren().forEach(player => {
             if (player.playerId === playerId) {
                 player.destroy()
+            }
+        })
+    }
+
+    updateLocation(playerInfo) {
+        this.otherPlayers.getChildren().forEach(player => {
+            if (player.playerId === playerInfo.playerId) {
+
+                switch (playerInfo.currentFacing) {
+                    case 'LEFT':
+                        player.anims.play('left', true)
+                        player.setPosition(playerInfo.x, playerInfo.y)
+                        break;
+                    case 'RIGHT':
+                        player.anims.play('right', true)
+                        player.setPosition(playerInfo.x, playerInfo.y)
+                        break;
+                    case 'UP':
+                        player.anims.play('up', true)
+                        player.setPosition(playerInfo.x, playerInfo.y)
+                        break;
+                    case 'DOWN':
+                        player.anims.play('down', true)
+                        player.setPosition(playerInfo.x, playerInfo.y)
+                        break;
+                }
             }
         })
     }
